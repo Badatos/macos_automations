@@ -63,7 +63,13 @@ FORMAT_UPPER=$(echo "$FORMAT" | tr '[:lower:]' '[:upper:]')
 
 # Fonction pour formater les tailles avec l'unité appropriée
 format_size() {
-  local bytes=$1
+  local bytes=${1:-0}
+  
+  # Vérifier que c'est un nombre valide
+  if ! [[ "$bytes" =~ ^[0-9]+$ ]]; then
+    bytes=0
+  fi
+  
   if [ "$bytes" -lt 1048576 ]; then
     # Afficher en Ko
     echo "scale=1; $bytes / 1024" | bc | awk '{printf "%.1f Ko", $0}'
@@ -183,12 +189,11 @@ done
 
 # Génération du rapport
 generate_report() {
-  local total_saving_mb="0.00"
   local total_saving_percent="0.0"
 
   if [ $TOTAL_ORIGINAL_SIZE -gt 0 ]; then
-    total_saving_mb=$(echo "scale=2; ($TOTAL_ORIGINAL_SIZE - $TOTAL_OUTPUT_SIZE) / 1048576" | bc)
-    total_saving_mb=$(format_size $total_saving)
+    total_saving=$(echo "$TOTAL_ORIGINAL_SIZE - $TOTAL_OUTPUT_SIZE" | bc)
+    total_saving_percent=$(echo "scale=1; (100 * ($TOTAL_ORIGINAL_SIZE - $TOTAL_OUTPUT_SIZE)) / $TOTAL_ORIGINAL_SIZE" | bc)
   fi
 
   local report=""
@@ -213,9 +218,7 @@ report+="───────────────────────"$
   if [ $TOTAL_ORIGINAL_SIZE -gt 0 ]; then
     total_original_display=$(format_size $TOTAL_ORIGINAL_SIZE)
     total_output_display=$(format_size $TOTAL_OUTPUT_SIZE)
-    total_saving=$(echo "$TOTAL_ORIGINAL_SIZE - $TOTAL_OUTPUT_SIZE" | bc)
     total_saving_display=$(format_size $total_saving)
-    total_saving_percent=$(echo "scale=1; (100 * ($TOTAL_ORIGINAL_SIZE - $TOTAL_OUTPUT_SIZE)) / $TOTAL_ORIGINAL_SIZE" | bc)
   fi
 
   report+="  Taille originale:  $total_original_display"$'\n'

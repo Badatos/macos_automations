@@ -2,7 +2,7 @@
 
 Vous trouverez ici quelques script dont je me sers pour optimiser certains usages sur mon Mac.
 
-Il sont tous utilisables directement via commande terminal, ou en les inclauant dans une "Action rapide" via Automator.
+Il sont tous utilisables directement via commande terminal, ou en les incluant dans une "Action rapide" via Automator.
 
 📖 **[Guide Automator →](AUTOMATOR_SETUP.md)** | **[Conversion d’images →](CONVERT_IMAGE_GUIDE.md)**
 
