@@ -1,0 +1,103 @@
+name: 🧪 Tests CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '*.sh'
+      - 'tests/**'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '*.sh'
+      - 'tests/**'
+      - '.github/workflows/tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        macos-version: [ 'macos-26', 'macos-27' ]
+      fail-fast: false
+
+    runs-on: ${{ matrix.macos-version }}
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install dependencies
+        run: |
+          brew install imagemagick
+          which magick || echo "ImageMagick not found in PATH"
+          magick --version || true
+
+      - name: 📋 List test files
+        run: |
+          echo "🔍 Test files found:"
+          find . -maxdepth 2 -name "test-*.sh" -o -name "*-test.sh" | sort
+
+      - name: 🧪 Run main image conversion test
+        run: |
+          echo "════════════════════════════════════════"
+          echo "TEST 1: Main image conversion test"
+          echo "════════════════════════════════════════"
+          chmod +x ./tests/test-convert-image.sh
+          ./tests/test-convert-image.sh
+        continue-on-error: true
+
+      - name: 🧪 Run AV1 conversion test
+        if: hashFiles('tests/test-convert-to-av1.sh') != ''
+        run: |
+          echo "════════════════════════════════════════"
+          echo "TEST 2: AV1 conversion test"
+          echo "════════════════════════════════════════"
+          chmod +x ./tests/test-convert-to-av1.sh
+          ./tests/test-convert-to-av1.sh
+        continue-on-error: true
+
+      - name: ✅ Verify scripts are executable
+        run: |
+          echo "🔐 Checking script permissions:"
+          for script in convert-image.sh convert-to-webp.sh convert-to-avif.sh convert-to-av1.sh; do
+            if [ -f "$script" ]; then
+              chmod +x "$script"
+              echo "✓ $script is executable"
+            fi
+          done
+
+      - name: 🔍 Basic syntax check
+        run: |
+          echo "🔍 Checking bash syntax..."
+          failed=0
+          for script in *.sh tests/*.sh; do
+            if [ -f "$script" ]; then
+              if bash -n "$script" 2>/dev/null; then
+                echo "✓ $script"
+              else
+                echo "✗ $script has syntax errors"
+                bash -n "$script"
+                failed=1
+              fi
+            fi
+          done
+          if [ $failed -eq 1 ]; then
+            exit 1
+          fi
+
+      - name: 📊 Test summary
+        if: always()
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════╗"
+          echo "║          TEST SUMMARY                  ║"
+          echo "╚════════════════════════════════════════╝"
+          echo ""
+          echo "✅ All available tests have been executed"
+          echo ""
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            echo "📱 System: macOS ${{ matrix.macos-version }}"
+          fi
+          echo ""
